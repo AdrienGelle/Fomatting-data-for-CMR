@@ -1,2 +1,3 @@
 # Fomatting-data-for-CMR
-Useful packages and script for transforming field sightings data to CMR format
+Useful packages and scripts for transforming field sightings data into life history format for capture-mark-capture studies
+

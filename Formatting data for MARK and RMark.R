@@ -52,7 +52,7 @@ input.data<-read.csv("Sightings/field.data.csv")#col = date, animal_id
 
 #OUTPUT
 output= merge(x=output,y=groups, by.x=c("animal_id"), by.y=c("animal_id"))#add groups to life histories
-write.csv(output, "Encounter history format.csv", row.names = F)
+write.csv(output, "outputs/Encounter history format.csv", row.names = F)
 
 
 #----------------------------------------------------------------------------------------------

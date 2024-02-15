@@ -3,56 +3,61 @@
 require(reshape)
 require(lubridate)
 require(RMark)
+library(dplyr)
+library(tidyr)
 
 #load data
-input.data<-read.csv("Sightings/field.data.csv")#col = date, animal_id
+input.data<-read.csv("Sightings/field.data.csv")#col = date, id
+df <- select(input.data, id, date)
 
-#Transform data & add a group covariate (e.g. "stage/sex")--
+#Transform data to encounter histories-----
 
-  input.data<-read.csv("Sightings/field.data.csv")
-  input.data$date <- as.Date(input.data$date,format = "%d/%m/%Y")
-  input.data$date = floor_date(input.data$date, "year")#rounds date down to year level
+#checking ID
+df$id = as.character(df$id)
+df$id <- trimws(df$id)#removing empty spaces
+
+#convert Date
+df$date = as.character(df$date)
+df$date <- as.Date(df$date,format = "%d/%m/%Y")
+
+# Extract the year from the date
+df$year <- format(df$date, "%Y")
+
+#Create a table with animal_id as rows and years as columns
+encounter_history <- table(df$id, df$year)
+
+#Convert the table to a data frame
+encounter_history_df <- as.data.frame.matrix(encounter_history)
+
+#Replace all NAs with 0 and all values > 0 with 1 to indicate presence or absence
+encounter_history_df[is.na(encounter_history_df)] <- 0
+encounter_history_df[encounter_history_df > 0] <- 1
+
+#Add id as the first column
+encounter_history_df <- cbind(id = rownames(encounter_history_df), encounter_history_df)
+
+#output encounter history
+write.csv(encounter_history_df, "outputs/Encounter history format.csv", row.names = F)
+
+#Sdd ringing season (optional)----
+covariates = read.csv("Covariates/individuals_covariates.csv",header = T)
+ringed.season <- select(covariates, id, ringed.season)#load ringed season
+output= merge(x=encounter_history_df,y=ringed.season, by.x=c("id"), by.y=c("id"))#add ringed.season to life histories
+
+
+write.csv(output, "outputs/Encounter history format.csv", row.names = F)
+
+
+#Add covariates (e.g. "stage/sex")-----
   
   #load covariate file (Covariate folder)
-  groups = read.csv("Covariates/individuals_groups.csv",header = T)#load groups
+  covariates = read.csv("Covariates/individuals_covariates.csv",header = T)#load groups
   #filter
-  groups = subset(groups, stage !="#N/A" & stage != "" & stage != "UNK") #remove unknown stages
-  
-  
-  #creating an indicator to show a capture occurred
-  input.data$sighting = 1
-  
-  #reshaping functions to pivot the data
-  output=cast(input.data,animal_id ~date)
-  
-  #fill in all the days when the animal wasn't seen with zeros
-  output[is.na(output)]=0
-  
-  #convert entries >1 to 1 (needed if animals can be caught >1x per occasion)
-  k=dim(output)[2]
-  output[,2:k]<-(output[,2:k]>0)*1
-  
-  #function to read the matrix and create the capture history strings
-  concat<-function(x)
-  {
-    k<-ncol(x)
-    n<-nrow(x)
-    out<-array(dim=n)
-    for (i in 1:n)
-    {
-      y<-(x[i,]>0)*1
-      out[i]<-paste(y,sep="",collapse="")
-    }
-    return(out)
-  }
-  
-  #capture history data frame for RMark  
-  capt.hist<-data.frame(animal_id=output$animal_id, ch=concat(output[,2:k]))
-
+  covariates = subset(covariates, stage !="#N/A" & stage != "" & stage != "UNK") #remove unknown stages
 
 #OUTPUT
-output= merge(x=output,y=groups, by.x=c("animal_id"), by.y=c("animal_id"))#add groups to life histories
-write.csv(output, "outputs/Encounter history format.csv", row.names = F)
+output= merge(x=encounter_history_df,y=covariates, by.x=c("id"), by.y=c("id"))#add groups to life histories
+write.csv(output, "outputs/Encounter history format_covariates.csv", row.names = F)
 
 
 #----------------------------------------------------------------------------------------------

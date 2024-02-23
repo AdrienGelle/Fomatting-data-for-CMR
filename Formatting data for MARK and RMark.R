@@ -39,26 +39,14 @@ encounter_history_df <- cbind(id = rownames(encounter_history_df), encounter_his
 #output encounter history
 write.csv(encounter_history_df, "outputs/Encounter history format.csv", row.names = F)
 
-#Add ringing season (optional)----
-covariates = read.csv("Covariates/individuals_covariates.csv",header = T)
-ringed.season <- select(covariates, id, ringed.season)#load ringed season
-output= merge(x=encounter_history_df,y=ringed.season, by.x=c("id"), by.y=c("id"))#add ringed.season to life histories
+#Add covariates (optional)----
+covariates = read.csv("Covariates/individuals_covariates.csv",header = T)#load covariates file
+output= merge(x=encounter_history_df,y=covariates, by.x=c("id"), by.y=c("id"))#add covariates to life histories
 
+#Filter out all unwanted individuals (e.g. no adults)
+output = subset (output, stage != "Adult" & stage != "" & stage != "UNK")#remove all ringed as adults or unknown stage
 
-write.csv(output, "outputs/Encounter history format.csv", row.names = F)
-
-
-#Add covariates (e.g. "stage/sex")-----
-  
-  #load covariate file (Covariate folder)
-  covariates = read.csv("Covariates/individuals_covariates.csv",header = T)#load groups
-  #filter
-  covariates = subset(covariates, stage !="#N/A" & stage != "" & stage != "UNK") #remove unknown stages
-
-#OUTPUT
-output= merge(x=encounter_history_df,y=covariates, by.x=c("id"), by.y=c("id"))#add groups to life histories
-write.csv(output, "outputs/Encounter history format_covariates.csv", row.names = F)
-
+write.csv(output, "outputs/Encounter history format.csv", row.names = F)#export csv
 
 #----------------------------------------------------------------------------------------------
 
@@ -108,4 +96,12 @@ for (i in 1:nrow(breeding_info)) {
 encounter_history_df[encounter_history_df == "1"] <- "NB"
 output=encounter_history_df
 
-write.csv(output, "outputs/Encounter history format_multistate.csv", row.names = F)
+#Add covariates (optional)----
+covariates = read.csv("Covariates/individuals_covariates.csv",header = T)#load covariates file
+output= merge(x=output,y=covariates, by.x=c("id"), by.y=c("id"))#add covariates to life histories
+
+#Filter out all unwanted individuals (e.g. no adults)
+output = subset (output, stage != "Adult" & stage != "" & stage != "UNK")#remove all ringed as adults or unknown stage
+
+#export
+write.csv(output, "outputs/Encounter history format_multistate.csv", row.names = F)#export csv
